@@ -23,8 +23,15 @@ jobs:
           chmod +x llvm.sh
           sudo ./llvm.sh $LLVM_VERSION all
           rm llvm.sh
-          # Verify paths exist
-          ls -la /usr/lib/llvm-19/bin/clang
+          # Create symlinks like bun's Dockerfile
+          for f in /usr/lib/llvm-$LLVM_VERSION/bin/*; do sudo ln -sf "$f" /usr/bin/; done
+          sudo ln -sf /usr/bin/clang-$LLVM_VERSION /usr/bin/clang
+          sudo ln -sf /usr/bin/clang++-$LLVM_VERSION /usr/bin/clang++
+          sudo ln -sf /usr/bin/lld-$LLVM_VERSION /usr/bin/lld
+          sudo ln -sf /usr/bin/llvm-ar-$LLVM_VERSION /usr/bin/llvm-ar
+          sudo ln -sf /usr/bin/ld.lld /usr/bin/ld
+          sudo ln -sf /usr/bin/clang /usr/bin/cc
+          sudo ln -sf /usr/bin/clang++ /usr/bin/c++
 
       - name: Install build deps
         run: |
@@ -47,16 +54,19 @@ jobs:
         uses: oven-sh/setup-bun@v2
 
       - name: Build
+        env:
+          CC: clang
+          CXX: clang++
+          AR: llvm-ar-19
+          RANLIB: llvm-ranlib-19
+          LD: lld-19
+          LLVM_VERSION: "19.1.7"
         run: |
           source $HOME/.cargo/env
           rustup install nightly && rustup default nightly
-          bun run build:release -- \
-            -DCMAKE_C_COMPILER=/usr/lib/llvm-19/bin/clang \
-            -DCMAKE_CXX_COMPILER=/usr/lib/llvm-19/bin/clang++ \
-            -DCMAKE_LINKER=/usr/lib/llvm-19/bin/llvm-link \
-            -DCMAKE_AR=/usr/lib/llvm-19/bin/llvm-ar \
-            -DCMAKE_RANLIB=/usr/lib/llvm-19/bin/llvm-ranlib \
-            -DLLD_PROGRAM=/usr/lib/llvm-19/bin/ld.lld
+          # Add flag to disable the undefined-var-template warning
+          export CXXFLAGS="-Wno-undefined-var-template"
+          bun run build:release
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
