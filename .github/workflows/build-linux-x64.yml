@@ -10,6 +10,24 @@ jobs:
     env:
       LLVM_VERSION: "19"
     steps:
+      - name: Maximize disk space
+        run: |
+          # Free up disk space to create swap
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /usr/local/lib/android
+          sudo rm -rf /opt/ghc
+          sudo rm -rf /opt/hostedtoolcache/CodeQL
+          df -h
+
+      - name: Setup swap
+        run: |
+          # Create 16GB swap file to prevent OOM
+          sudo fallocate -l 16G /swapfile
+          sudo chmod 600 /swapfile
+          sudo mkswap /swapfile
+          sudo swapon /swapfile
+          free -h
+
       - name: Checkout bun fork
         uses: actions/checkout@v4
         with:
@@ -61,12 +79,15 @@ jobs:
           RANLIB: llvm-ranlib-19
           LD: lld-19
           LLVM_VERSION: "19.1.7"
+          # Limit parallelism to reduce memory usage
+          CMAKE_BUILD_PARALLEL_LEVEL: "2"
         run: |
           source $HOME/.cargo/env
           rustup install nightly && rustup default nightly
           # Add flag to disable the undefined-var-template warning
           export CXXFLAGS="-Wno-undefined-var-template"
-          bun run build:release
+          # Use limited parallelism with ninja
+          bun run build:release -- -j 2
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
