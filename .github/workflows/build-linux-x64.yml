@@ -12,17 +12,29 @@ jobs:
     steps:
       - name: Maximize disk space
         run: |
-          # Free up disk space to create swap
+          # Aggressive disk cleanup
           sudo rm -rf /usr/share/dotnet
           sudo rm -rf /usr/local/lib/android
           sudo rm -rf /opt/ghc
           sudo rm -rf /opt/hostedtoolcache/CodeQL
+          sudo rm -rf /opt/hostedtoolcache/Python
+          sudo rm -rf /opt/hostedtoolcache/Ruby
+          sudo rm -rf /opt/hostedtoolcache/go
+          sudo rm -rf /opt/hostedtoolcache/node
+          sudo rm -rf /opt/hostedtoolcache/PyPy
+          sudo rm -rf /usr/local/share/boost
+          sudo rm -rf /usr/local/share/chromium
+          sudo rm -rf /usr/local/share/edge_driver
+          sudo rm -rf /usr/local/share/gecko_driver
+          sudo rm -rf /usr/local/share/powershell
+          sudo rm -rf /usr/share/swift
+          sudo apt-get clean
           df -h
 
       - name: Setup swap
         run: |
-          # Create 16GB swap file to prevent OOM
-          sudo fallocate -l 16G /swapfile
+          # Create 8GB swap file
+          sudo fallocate -l 8G /swapfile
           sudo chmod 600 /swapfile
           sudo mkswap /swapfile
           sudo swapon /swapfile
@@ -65,8 +77,14 @@ jobs:
 
       - name: Install Rust
         run: |
-          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain none
           echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+          # Install the specific nightly version bun needs (from rust-toolchain.toml)
+          source $HOME/.cargo/env
+          rustup install nightly-2025-12-10
+          rustup default nightly-2025-12-10
+          # Clean up download cache
+          rm -rf $HOME/.cargo/registry/cache
 
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
@@ -83,7 +101,6 @@ jobs:
           CMAKE_BUILD_PARALLEL_LEVEL: "2"
         run: |
           source $HOME/.cargo/env
-          rustup install nightly && rustup default nightly
           # Add flag to disable the undefined-var-template warning
           export CXXFLAGS="-Wno-undefined-var-template"
           # Use limited parallelism with ninja
