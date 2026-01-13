@@ -9,10 +9,6 @@ jobs:
     runs-on: ubuntu-22.04
     env:
       LLVM_VERSION: "19"
-      CC: clang-19
-      CXX: clang++-19
-      AR: llvm-ar-19
-      LD: lld-19
     steps:
       - name: Checkout bun fork
         uses: actions/checkout@v4
@@ -27,6 +23,19 @@ jobs:
           chmod +x llvm.sh
           sudo ./llvm.sh $LLVM_VERSION all
           rm llvm.sh
+
+      - name: Create symlinks for LLVM tools
+        run: |
+          sudo ln -sf /usr/bin/clang-19 /usr/bin/clang
+          sudo ln -sf /usr/bin/clang++-19 /usr/bin/clang++
+          sudo ln -sf /usr/bin/ld.lld-19 /usr/bin/ld.lld
+          sudo ln -sf /usr/bin/llvm-ar-19 /usr/bin/llvm-ar
+          sudo ln -sf /usr/bin/llvm-ranlib-19 /usr/bin/llvm-ranlib
+          sudo ln -sf /usr/bin/llvm-link-19 /usr/bin/llvm-link
+          sudo ln -sf /usr/bin/lld-19 /usr/bin/lld
+          # Verify
+          which clang && clang --version | head -1
+          which ld.lld && ld.lld --version | head -1
 
       - name: Install build deps
         run: |
