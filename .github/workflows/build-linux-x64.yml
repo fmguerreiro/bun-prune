@@ -23,13 +23,8 @@ jobs:
           chmod +x llvm.sh
           sudo ./llvm.sh $LLVM_VERSION all
           rm llvm.sh
-
-      - name: Verify LLVM setup
-        run: |
-          # LLVM script should create /usr/lib/llvm-19/bin with symlinks
-          ls -la /usr/lib/llvm-19/bin/ | head -20
-          /usr/lib/llvm-19/bin/clang --version | head -1
-          /usr/lib/llvm-19/bin/ld.lld --version | head -1
+          # Verify paths exist
+          ls -la /usr/lib/llvm-19/bin/clang
 
       - name: Install build deps
         run: |
@@ -55,7 +50,13 @@ jobs:
         run: |
           source $HOME/.cargo/env
           rustup install nightly && rustup default nightly
-          bun run build:release
+          bun run build:release -- \
+            -DCMAKE_C_COMPILER=/usr/lib/llvm-19/bin/clang \
+            -DCMAKE_CXX_COMPILER=/usr/lib/llvm-19/bin/clang++ \
+            -DCMAKE_LINKER=/usr/lib/llvm-19/bin/llvm-link \
+            -DCMAKE_AR=/usr/lib/llvm-19/bin/llvm-ar \
+            -DCMAKE_RANLIB=/usr/lib/llvm-19/bin/llvm-ranlib \
+            -DLLD_PROGRAM=/usr/lib/llvm-19/bin/ld.lld
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
