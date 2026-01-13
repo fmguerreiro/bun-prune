@@ -24,18 +24,21 @@ jobs:
           sudo ./llvm.sh $LLVM_VERSION all
           rm llvm.sh
 
-      - name: Create symlinks for LLVM tools
+      - name: Setup LLVM paths for bun cmake
         run: |
-          sudo ln -sf /usr/bin/clang-19 /usr/bin/clang
-          sudo ln -sf /usr/bin/clang++-19 /usr/bin/clang++
-          sudo ln -sf /usr/bin/ld.lld-19 /usr/bin/ld.lld
-          sudo ln -sf /usr/bin/llvm-ar-19 /usr/bin/llvm-ar
-          sudo ln -sf /usr/bin/llvm-ranlib-19 /usr/bin/llvm-ranlib
-          sudo ln -sf /usr/bin/llvm-link-19 /usr/bin/llvm-link
-          sudo ln -sf /usr/bin/lld-19 /usr/bin/lld
+          # bun's cmake looks in /usr/lib/llvm-19/bin, create it with symlinks
+          sudo mkdir -p /usr/lib/llvm-19/bin
+          for tool in clang clang++ ld.lld llvm-ar llvm-ranlib llvm-link lld llvm-strip; do
+            if [ -f "/usr/bin/${tool}-19" ]; then
+              sudo ln -sf "/usr/bin/${tool}-19" "/usr/lib/llvm-19/bin/${tool}"
+            fi
+          done
+          # Also add versioned symlinks
+          sudo ln -sf /usr/bin/clang-19 /usr/lib/llvm-19/bin/clang-19
+          sudo ln -sf /usr/bin/clang++-19 /usr/lib/llvm-19/bin/clang++-19
           # Verify
-          which clang && clang --version | head -1
-          which ld.lld && ld.lld --version | head -1
+          ls -la /usr/lib/llvm-19/bin/
+          /usr/lib/llvm-19/bin/clang --version | head -1
 
       - name: Install build deps
         run: |
