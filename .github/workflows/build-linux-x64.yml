@@ -9,6 +9,10 @@ jobs:
     runs-on: ubuntu-22.04
     env:
       LLVM_VERSION: "19"
+      CC: clang-19
+      CXX: clang++-19
+      AR: llvm-ar-19
+      LD: lld-19
     steps:
       - name: Checkout bun fork
         uses: actions/checkout@v4
@@ -23,11 +27,6 @@ jobs:
           chmod +x llvm.sh
           sudo ./llvm.sh $LLVM_VERSION all
           rm llvm.sh
-          sudo update-alternatives --install /usr/bin/clang clang /usr/bin/clang-$LLVM_VERSION 100
-          sudo update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-$LLVM_VERSION 100
-          sudo update-alternatives --install /usr/bin/lld lld /usr/bin/lld-$LLVM_VERSION 100
-          sudo update-alternatives --install /usr/bin/llvm-ar llvm-ar /usr/bin/llvm-ar-$LLVM_VERSION 100
-          sudo ln -sf /usr/bin/lld /usr/bin/ld
 
       - name: Install build deps
         run: |
@@ -53,7 +52,6 @@ jobs:
         run: |
           source $HOME/.cargo/env
           rustup install nightly && rustup default nightly
-          export CC=clang CXX=clang++ AR=llvm-ar LD=lld
           bun run build:release
 
       - name: Upload artifact
